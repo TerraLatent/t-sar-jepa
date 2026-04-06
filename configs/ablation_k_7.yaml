@@ -1,0 +1,22 @@
+data:
+  embeddings_dir: "data/encoded_v24"
+  window_size: 7
+  min_sequence_length: 10
+  batch_size: 64
+  num_workers: 8
+model:
+  embed_dim: 768
+  num_layers: 4
+  num_heads: 8
+  ffn_dim: 2048
+  dropout: 0.1
+  time_encoding_type: "sinusoidal"
+training:
+  epochs: 150
+  lr: 1.0e-4
+  weight_decay: 0.01
+  warmup_steps: 500
+  loss_type: "smooth_l1"
+output:
+  checkpoint_dir: "checkpoints/ablation_k_7"
+  save_every: 50

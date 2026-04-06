@@ -1,0 +1,22 @@
+data:
+  patch_dir: "data/patches"
+  patch_size: 224
+  batch_size: 256
+model:
+  checkpoint: "checkpoints/sarjepa_pretrained/checkpoint-200.pth"
+  in_chans: 1
+training:
+  epochs: 50
+  lr: 1.0e-4
+  weight_decay: 0.05
+  warmup_epochs: 5
+  beta1: 0.9
+  beta2: 0.95
+  ema_momentum: 0.996
+  window_size: 7
+  num_window: 4
+  mask_ratio: 0.8
+output:
+  checkpoint_dir: "checkpoints/stage1_v24"
+  save_every: 10
+  log_dir: "logs/stage1_v24"
