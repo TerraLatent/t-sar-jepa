@@ -165,25 +165,20 @@ def generate_kilauea_case_study(scores_file, coherence_dir, patch_dir, output_pa
     diff_grid_hires = grid_hires - grid_quiet_hires
 
     # ==================== PLOTTING ====================
-    fig = plt.figure(figsize=(14, 9))
-    gs = GridSpec(2, 2, figure=fig, wspace=0.35, hspace=0.35,
-                  width_ratios=[1.5, 1])
+    fig = plt.figure(figsize=(14, 8))
+    gs = GridSpec(2, 1, figure=fig, hspace=0.35, height_ratios=[1.2, 1])
 
-    # Color scheme
     cmap_anomaly = 'hot_r'
-    cmap_coherence = 'RdYlGn'
 
-    # --- (A) Time series (spans full top row) ---
-    ax_ts = fig.add_subplot(gs[0, :])
+    # --- (A) Time series ---
+    ax_ts = fig.add_subplot(gs[0])
     ax_ts.plot(dates, cell_scores, 'k-', linewidth=0.8, alpha=0.7)
     ax_ts.fill_between(dates, cell_scores, alpha=0.3, color='steelblue')
 
-    # Mark eruption
     ax_ts.axvline(eruption_dec, color='red', linestyle='--', linewidth=1.5, alpha=0.8)
     ax_ts.text(eruption_dec, ax_ts.get_ylim()[1] * 0.95, ' Dec \'24\n eruption',
                color='red', fontsize=8, va='top')
 
-    # Mark peak
     peak_idx = list(dates).index(peak_dt) if peak_dt in dates else np.argmax(cell_scores)
     ax_ts.plot(dates[peak_idx], cell_scores[peak_idx], 'rv', markersize=10)
 
@@ -195,35 +190,17 @@ def generate_kilauea_case_study(scores_file, coherence_dir, patch_dir, output_pa
     plt.setp(ax_ts.xaxis.get_majorticklabels(), rotation=45, ha='right')
     ax_ts.grid(True, alpha=0.3)
 
-    # --- (B) Anomaly heatmap: eruption peak (interpolated) ---
-    ax_heat = fig.add_subplot(gs[1, 0])
+    # --- (B) Spatial anomaly heatmap at eruption peak (interpolated) ---
+    ax_heat = fig.add_subplot(gs[1])
     p_vmin = np.nanmin(grid_hires) if not np.all(np.isnan(grid_hires)) else 0
     p_vmax = np.nanmax(grid_hires) if not np.all(np.isnan(grid_hires)) else 1
     im = ax_heat.imshow(grid_hires, cmap=cmap_anomaly, vmin=p_vmin, vmax=p_vmax,
-                        interpolation='bilinear')
+                        interpolation='bilinear', aspect='equal')
     fmt_peak = f'{peak_date[:4]}-{peak_date[4:6]}-{peak_date[6:]}'
-    ax_heat.set_title(f'(B) Peak Anomaly Scores\n({fmt_peak})',
-                     fontsize=11, fontweight='bold')
+    ax_heat.set_title(f'(B) Spatial Anomaly Map at Eruption Peak ({fmt_peak})',
+                     fontsize=12, fontweight='bold')
     ax_heat.axis('off')
-    plt.colorbar(im, ax=ax_heat, fraction=0.046, pad=0.04, label='L2 Score')
-
-    # --- (C) Coherence map ---
-    ax_coh = fig.add_subplot(gs[1, 1])
-    if best_coh is not None:
-        coh_map = np.load(best_coh, mmap_mode='r')
-        # Downsample for display
-        step = max(1, coh_map.shape[0] // 200)
-        coh_display = coh_map[::step, ::step]
-        im_coh = ax_coh.imshow(coh_display, cmap=cmap_coherence, vmin=0, vmax=1)
-        coh_parts = best_coh.stem.split("_")
-        ax_coh.set_title(f'(C) InSAR Coherence\n({coh_parts[2]} to {coh_parts[3]})',
-                        fontsize=11, fontweight='bold')
-        plt.colorbar(im_coh, ax=ax_coh, fraction=0.046, pad=0.04, label='Coherence')
-    else:
-        ax_coh.text(0.5, 0.5, 'No coherence map', ha='center', va='center',
-                   transform=ax_coh.transAxes)
-        ax_coh.set_title('(C) InSAR Coherence', fontsize=11, fontweight='bold')
-    ax_coh.axis('off')
+    plt.colorbar(im, ax=ax_heat, fraction=0.03, pad=0.02, label='L2 Score')
 
     fig.suptitle('T-SAR-JEPA: Kilauea Eruption Case Study', fontsize=14, fontweight='bold', y=0.98)
 
