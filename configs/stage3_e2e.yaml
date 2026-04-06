@@ -20,6 +20,8 @@ training:
   weight_decay: 0.01
   epochs_phase_a: 30
   epochs_phase_b: 20
+  encoder_lr_phase_b: 5.0e-6
+  predictor_lr_phase_b: 5.0e-5
   loss_type: "smooth_l1"
   grad_clip: 1.0
 output:

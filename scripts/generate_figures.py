@@ -1,4 +1,4 @@
-"""Generate paper figures for T-SAR-JEPA.
+"""Generate paper figures for T-SAR-JEPA v24.
 
 Figure 1: Architecture diagram (tikz in LaTeX, skip here)
 Figure 2: Kilauea eruption case study — 4 panels:
@@ -14,6 +14,7 @@ from pathlib import Path
 from datetime import datetime
 
 import numpy as np
+from scipy.ndimage import zoom
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -143,6 +144,26 @@ def generate_kilauea_case_study(scores_file, coherence_dir, patch_dir, output_pa
     quiet_patch_file = patch_path / f"{best_key}_{quiet_date}.npy"
     peak_patch_file = patch_path / f"{best_key}_{peak_date}.npy"
 
+    # ==================== INTERPOLATION ====================
+    # Fill any NaN cells with neighbor mean before interpolation
+    from scipy.ndimage import generic_filter
+    def _nanmean_filter(values):
+        valid = values[~np.isnan(values)]
+        return np.nanmean(valid) if len(valid) > 0 else 0.0
+
+    grid_filled = grid.copy()
+    grid_quiet_filled = grid_quiet.copy()
+    if np.any(np.isnan(grid_filled)):
+        grid_filled = generic_filter(grid_filled, _nanmean_filter, size=3)
+    if np.any(np.isnan(grid_quiet_filled)):
+        grid_quiet_filled = generic_filter(grid_quiet_filled, _nanmean_filter, size=3)
+
+    # Interpolate 10x10 -> 100x100 with bicubic for smooth visualization
+    zoom_factor = 10
+    grid_hires = zoom(grid_filled, zoom_factor, order=3)
+    grid_quiet_hires = zoom(grid_quiet_filled, zoom_factor, order=3)
+    diff_grid_hires = grid_hires - grid_quiet_hires
+
     # ==================== PLOTTING ====================
     fig = plt.figure(figsize=(16, 10))
     gs = GridSpec(2, 3, figure=fig, wspace=0.3, hspace=0.35,
@@ -157,12 +178,9 @@ def generate_kilauea_case_study(scores_file, coherence_dir, patch_dir, output_pa
     ax_ts.plot(dates, cell_scores, 'k-', linewidth=0.8, alpha=0.7)
     ax_ts.fill_between(dates, cell_scores, alpha=0.3, color='steelblue')
 
-    # Mark eruptions
+    # Mark eruption
     ax_ts.axvline(eruption_dec, color='red', linestyle='--', linewidth=1.5, alpha=0.8)
-    ax_ts.axvline(eruption_mar, color='red', linestyle='--', linewidth=1.5, alpha=0.8)
     ax_ts.text(eruption_dec, ax_ts.get_ylim()[1] * 0.95, ' Dec \'24\n eruption',
-               color='red', fontsize=8, va='top')
-    ax_ts.text(eruption_mar, ax_ts.get_ylim()[1] * 0.95, ' Mar \'25\n eruption',
                color='red', fontsize=8, va='top')
 
     # Mark peak
@@ -177,36 +195,42 @@ def generate_kilauea_case_study(scores_file, coherence_dir, patch_dir, output_pa
     plt.setp(ax_ts.xaxis.get_majorticklabels(), rotation=45, ha='right')
     ax_ts.grid(True, alpha=0.3)
 
-    # --- (B) SAR patches: quiet vs peak ---
-    ax_quiet = fig.add_subplot(gs[1, 0])
-    if quiet_patch_file.exists():
-        patch_q = np.load(quiet_patch_file)
-        if patch_q.ndim == 3:
-            patch_q = patch_q[0]
-        ax_quiet.imshow(patch_q, cmap='gray', vmin=0, vmax=1)
-        ax_quiet.set_title(f'(B) Quiescent ({quiet_date[:4]}-{quiet_date[4:6]}-{quiet_date[6:]})',
-                          fontsize=11, fontweight='bold')
-    else:
-        ax_quiet.text(0.5, 0.5, f'Patch not found:\n{quiet_patch_file.name}',
-                     ha='center', va='center', transform=ax_quiet.transAxes, fontsize=8)
-        ax_quiet.set_title('(B) Quiescent', fontsize=11, fontweight='bold')
-    ax_quiet.axis('off')
+    # --- (B) Change map: eruption minus quiescent (interpolated) ---
+    ax_change = fig.add_subplot(gs[1, 0])
+    d_vmax = np.nanmax(np.abs(diff_grid_hires)) if not np.all(np.isnan(diff_grid_hires)) else 1
+    im_diff = ax_change.imshow(diff_grid_hires, cmap='RdYlBu_r', vmin=0, vmax=d_vmax,
+                               interpolation='bilinear')
+    ax_change.set_title('(B) Anomaly Change\n(eruption $-$ quiescent)',
+                       fontsize=11, fontweight='bold')
+    ax_change.set_xlabel('Grid X', fontsize=9)
+    ax_change.set_ylabel('Grid Y', fontsize=9)
+    ax_change.set_xticks([])
+    ax_change.set_yticks([])
+    plt.colorbar(im_diff, ax=ax_change, fraction=0.046, pad=0.04, label=r'$\Delta$ L2 Score')
 
-    # --- (C) Anomaly heatmap at peak ---
+    # --- (C) Anomaly heatmap: eruption peak (interpolated) ---
     ax_heat = fig.add_subplot(gs[1, 1])
-    vmax = np.nanpercentile(grid, 95) if not np.all(np.isnan(grid)) else 1
-    im = ax_heat.imshow(grid, cmap=cmap_anomaly, vmin=0, vmax=max(vmax, 0.5),
-                        interpolation='nearest')
-    ax_heat.set_title(f'(C) Anomaly Map\n({peak_date[:4]}-{peak_date[4:6]}-{peak_date[6:]})',
+    p_vmin = np.nanmin(grid_hires) if not np.all(np.isnan(grid_hires)) else 0
+    p_vmax = np.nanmax(grid_hires) if not np.all(np.isnan(grid_hires)) else 1
+    im = ax_heat.imshow(grid_hires, cmap=cmap_anomaly, vmin=p_vmin, vmax=p_vmax,
+                        interpolation='bilinear')
+    fmt_peak = f'{peak_date[:4]}-{peak_date[4:6]}-{peak_date[6:]}'
+    ax_heat.set_title(f'(C) Peak Anomaly Scores\n({fmt_peak})',
                      fontsize=11, fontweight='bold')
-    ax_heat.axis('off')
+    ax_heat.set_xlabel('Grid X', fontsize=9)
+    ax_heat.set_ylabel('Grid Y', fontsize=9)
+    ax_heat.set_xticks([])
+    ax_heat.set_yticks([])
     plt.colorbar(im, ax=ax_heat, fraction=0.046, pad=0.04, label='L2 Score')
 
     # --- (D) Coherence map ---
     ax_coh = fig.add_subplot(gs[1, 2])
     if best_coh is not None:
-        coh_map = np.load(best_coh)
-        im_coh = ax_coh.imshow(coh_map, cmap=cmap_coherence, vmin=0, vmax=1)
+        coh_map = np.load(best_coh, mmap_mode='r')
+        # Downsample for display
+        step = max(1, coh_map.shape[0] // 200)
+        coh_display = coh_map[::step, ::step]
+        im_coh = ax_coh.imshow(coh_display, cmap=cmap_coherence, vmin=0, vmax=1)
         coh_parts = best_coh.stem.split("_")
         ax_coh.set_title(f'(D) InSAR Coherence\n({coh_parts[2]} to {coh_parts[3]})',
                         fontsize=11, fontweight='bold')
@@ -297,7 +321,7 @@ if __name__ == "__main__":
     output_dir.mkdir(parents=True, exist_ok=True)
 
     print("[fig] Generating architecture diagram...")
-    generate_architecture_diagram(str(output_dir / "fig1_architecture.pdf"))
+    generate_architecture_diagram(str(output_dir / "fig1_architecture_v24.pdf"))
 
     print("[fig] Generating Kilauea case study figure...")
     generate_kilauea_case_study(

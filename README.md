@@ -58,6 +58,11 @@ Available AOIs: `hawaii`, `la`, `pilbara`
 python training/pretrain.py --config configs/stage1_pretrain.yaml
 ```
 
+### Encode Patches (between Stage 1 and Stage 2)
+```bash
+python training/encode_dataset.py --config configs/stage1_pretrain.yaml
+```
+
 ### Stage 2: Temporal Prediction
 ```bash
 python training/train_temporal.py --config configs/stage2_temporal.yaml
@@ -113,6 +118,12 @@ t-sar-jepa/
 ├── README.md
 └── requirements.txt
 ```
+
+## Hardware Requirements
+- Training was performed on a single NVIDIA H200 (140 GB VRAM)
+- Stage 1 and Stage 3 require significant VRAM (batch 256, ViT-Base/16 on 224x224)
+- For smaller GPUs, reduce batch size in the config files
+- Evaluation and inference can run on any GPU with >= 8 GB VRAM
 
 ## Citation
 
