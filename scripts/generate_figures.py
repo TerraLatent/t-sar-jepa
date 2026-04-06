@@ -165,9 +165,9 @@ def generate_kilauea_case_study(scores_file, coherence_dir, patch_dir, output_pa
     diff_grid_hires = grid_hires - grid_quiet_hires
 
     # ==================== PLOTTING ====================
-    fig = plt.figure(figsize=(16, 10))
-    gs = GridSpec(2, 3, figure=fig, wspace=0.3, hspace=0.35,
-                  width_ratios=[2, 1, 1])
+    fig = plt.figure(figsize=(14, 9))
+    gs = GridSpec(2, 2, figure=fig, wspace=0.35, hspace=0.35,
+                  width_ratios=[1.5, 1])
 
     # Color scheme
     cmap_anomaly = 'hot_r'
@@ -195,36 +195,20 @@ def generate_kilauea_case_study(scores_file, coherence_dir, patch_dir, output_pa
     plt.setp(ax_ts.xaxis.get_majorticklabels(), rotation=45, ha='right')
     ax_ts.grid(True, alpha=0.3)
 
-    # --- (B) Change map: eruption minus quiescent (interpolated) ---
-    ax_change = fig.add_subplot(gs[1, 0])
-    d_vmax = np.nanmax(np.abs(diff_grid_hires)) if not np.all(np.isnan(diff_grid_hires)) else 1
-    im_diff = ax_change.imshow(diff_grid_hires, cmap='RdYlBu_r', vmin=0, vmax=d_vmax,
-                               interpolation='bilinear')
-    ax_change.set_title('(B) Anomaly Change\n(eruption $-$ quiescent)',
-                       fontsize=11, fontweight='bold')
-    ax_change.set_xlabel('Grid X', fontsize=9)
-    ax_change.set_ylabel('Grid Y', fontsize=9)
-    ax_change.set_xticks([])
-    ax_change.set_yticks([])
-    plt.colorbar(im_diff, ax=ax_change, fraction=0.046, pad=0.04, label=r'$\Delta$ L2 Score')
-
-    # --- (C) Anomaly heatmap: eruption peak (interpolated) ---
-    ax_heat = fig.add_subplot(gs[1, 1])
+    # --- (B) Anomaly heatmap: eruption peak (interpolated) ---
+    ax_heat = fig.add_subplot(gs[1, 0])
     p_vmin = np.nanmin(grid_hires) if not np.all(np.isnan(grid_hires)) else 0
     p_vmax = np.nanmax(grid_hires) if not np.all(np.isnan(grid_hires)) else 1
     im = ax_heat.imshow(grid_hires, cmap=cmap_anomaly, vmin=p_vmin, vmax=p_vmax,
                         interpolation='bilinear')
     fmt_peak = f'{peak_date[:4]}-{peak_date[4:6]}-{peak_date[6:]}'
-    ax_heat.set_title(f'(C) Peak Anomaly Scores\n({fmt_peak})',
+    ax_heat.set_title(f'(B) Peak Anomaly Scores\n({fmt_peak})',
                      fontsize=11, fontweight='bold')
-    ax_heat.set_xlabel('Grid X', fontsize=9)
-    ax_heat.set_ylabel('Grid Y', fontsize=9)
-    ax_heat.set_xticks([])
-    ax_heat.set_yticks([])
+    ax_heat.axis('off')
     plt.colorbar(im, ax=ax_heat, fraction=0.046, pad=0.04, label='L2 Score')
 
-    # --- (D) Coherence map ---
-    ax_coh = fig.add_subplot(gs[1, 2])
+    # --- (C) Coherence map ---
+    ax_coh = fig.add_subplot(gs[1, 1])
     if best_coh is not None:
         coh_map = np.load(best_coh, mmap_mode='r')
         # Downsample for display
@@ -232,13 +216,13 @@ def generate_kilauea_case_study(scores_file, coherence_dir, patch_dir, output_pa
         coh_display = coh_map[::step, ::step]
         im_coh = ax_coh.imshow(coh_display, cmap=cmap_coherence, vmin=0, vmax=1)
         coh_parts = best_coh.stem.split("_")
-        ax_coh.set_title(f'(D) InSAR Coherence\n({coh_parts[2]} to {coh_parts[3]})',
+        ax_coh.set_title(f'(C) InSAR Coherence\n({coh_parts[2]} to {coh_parts[3]})',
                         fontsize=11, fontweight='bold')
         plt.colorbar(im_coh, ax=ax_coh, fraction=0.046, pad=0.04, label='Coherence')
     else:
         ax_coh.text(0.5, 0.5, 'No coherence map', ha='center', va='center',
                    transform=ax_coh.transAxes)
-        ax_coh.set_title('(D) InSAR Coherence', fontsize=11, fontweight='bold')
+        ax_coh.set_title('(C) InSAR Coherence', fontsize=11, fontweight='bold')
     ax_coh.axis('off')
 
     fig.suptitle('T-SAR-JEPA: Kilauea Eruption Case Study', fontsize=14, fontweight='bold', y=0.98)
