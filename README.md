@@ -58,7 +58,7 @@ Available AOIs: `hawaii`, `la`, `pilbara`
 python training/pretrain.py --config configs/stage1_pretrain.yaml
 ```
 
-### Encode Patches (between Stage 1 and Stage 2)
+#### Encode Patches (between Stage 1 and Stage 2)
 ```bash
 python training/encode_dataset.py --config configs/stage1_pretrain.yaml
 ```
@@ -78,7 +78,7 @@ python training/finetune_e2e.py --config configs/stage3_e2e.yaml
 ```bash
 python scripts/run_evaluation.py --config configs/stage3_e2e.yaml --checkpoint checkpoints/stage3/best_e2e.pt
 ```
-
+---
 ## Repository Structure
 
 ```
@@ -124,7 +124,7 @@ t-sar-jepa/
 - Stage 1 and Stage 3 require significant VRAM (batch 256, ViT-Base/16 on 224x224)
 - For smaller GPUs, reduce batch size in the config files
 - Evaluation and inference can run on any GPU with >= 8 GB VRAM
-
+---
 ## Citation
 
 ```bibtex
