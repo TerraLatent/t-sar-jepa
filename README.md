@@ -1,6 +1,6 @@
 # T-SAR-JEPA: Temporal Self-Supervised Anomaly Detection in SAR Amplitude Stacks via Latent Prediction
 
-[![Paper](https://img.shields.io/badge/Paper-IEEE%20GRSS%20DFC%202026-blue)](https://www.grss-ieee.org/community/technical-committees/2026-ieee-grss-data-fusion-contest/)
+[![Paper](https://img.shields.io/badge/Paper-IEEE%20GRSS%20DFC%202026-blue)]([https://www.grss-ieee.org/community/technical-committees/2026-ieee-grss-data-fusion-contest/](https://www.grss-ieee.org/about/))
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-green)](https://python.org)
 [![PyTorch 2.0+](https://img.shields.io/badge/PyTorch-2.0%2B-red)](https://pytorch.org)
 
